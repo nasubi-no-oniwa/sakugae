@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#f3ecd9">
+<meta name="description" content="柵で道をつくって、相手の柵と入れかえろ。6レーンの陣取りタワーディフェンス。">
+<title>さくがえ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<section id="title" class="screen active">
+  <div class="title-box">
+    <h1 class="logo">さく<span>がえ</span></h1>
+    <p class="tagline">柵で道をつくって、相手の柵と入れかえろ。</p>
+    <div class="menu">
+      <p class="menu-label">CPUとたいせん</p>
+      <div class="lv-row">
+        <button class="btn lv" data-level="easy">よわい</button>
+        <button class="btn lv" data-level="normal">ふつう</button>
+        <button class="btn lv" data-level="hard">つよい</button>
+      </div>
+      <button class="btn sub" id="btn-howto">あそびかた</button>
+    </div>
+    <a class="home-link" href="https://nasubi-no-oniwa.github.io/">🍆 なすびのお庭へ</a>
+  </div>
+</section>
+
+<section id="game" class="screen">
+  <div class="bar top"><span class="who opp" id="name1">CPU</span><span class="hp" id="hp1"></span><span class="coin" id="coin1">12</span></div>
+  <div class="status" id="status">入れかえまで 15秒</div>
+  <div class="board-wrap"><canvas id="board"></canvas></div>
+  <div class="bar bottom"><span class="who me">あなた</span><span class="hp" id="hp0"></span><span class="coin" id="coin0">12</span><button class="mini" id="btn-quit">やめる</button></div>
+</section>
+
+<div class="overlay" id="ov-result">
+  <div class="card">
+    <h2 id="res-title">かち！</h2>
+    <p id="res-sub"></p>
+    <button class="btn primary" id="btn-again">もう一回</button>
+    <button class="btn sub" id="btn-title">タイトルへ</button>
+  </div>
+</div>
+<div class="overlay" id="ov-howto">
+  <div class="card howto">
+    <h2>あそびかた</h2>
+    <ul>
+      <li><b>下の城</b>があなた。レーンの下の <b>▲</b> を押してはなすと兵士が出ます（1コイン）。押しているあいだ、兵士の<b>道すじ</b>が点線で見えます。</li>
+      <li>兵士が相手の城に着くと <b>1ダメージ</b>。先に相手のHP10をけずったら勝ち。受けた側は<b>2コイン</b>もらえます。</li>
+      <li><b>自分の陣地（下半分）の線</b>を押すと柵を置けます（1コイン）。もう一度押すとこわせますが、<b>コインはもどりません</b>。横1列をまるごとふさぐことはできません。</li>
+      <li>兵士は前がふさがると横へ動きます。進めないままだと、しばらくして<b>目の前の柵をこわします</b>。</li>
+      <li>敵と味方の兵士がぶつかると相殺。おたがい1コインもらえます。</li>
+      <li>15秒ごとに、交互に<b>入れかえ</b>の番がきます。自分の列と相手の列を1つずつタップすると、3秒後に柵がまるごと入れかわります。</li>
+      <li>入れかえでもらった<b>金色の柵</b>は、こわすと1コインになります。</li>
+    </ul>
+    <button class="btn primary" id="btn-howto-close">とじる</button>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="js/engine.js"></script>
+<script src="js/cpu.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
