@@ -53,3 +53,19 @@ button { font-family: inherit; font-weight: 800; color: inherit; cursor: pointer
 .home-link { display: inline-block; margin-top: 18px; color: var(--ink); font-size: 14px; }
 .status { white-space: nowrap; max-width: 100%; overflow: hidden; }
 @media (max-width: 380px) { .status { font-size: 11.5px; padding: 3px 8px; } }
+
+/* あいことば対戦 */
+.btn.online { background: #e3d4ff; }
+.btn.wide { width: 100%; }
+.card h2.small { font-size: 26px; }
+#online-form, #online-wait { display: flex; flex-direction: column; gap: 10px; }
+#online-form[hidden], #online-wait[hidden] { display: none; }
+.field-l { display: flex; flex-direction: column; gap: 4px; font-size: 13px; text-align: left; }
+.field-l input { font: inherit; font-size: 18px; font-weight: 800; color: var(--ink); padding: 10px 12px; border-radius: 12px; border: 3px solid var(--ink); background: #fff; outline: none; -webkit-user-select: text; user-select: text; }
+.field-l input:focus { box-shadow: 0 0 0 3px rgba(245,184,0,.5); }
+.hint { margin: 0; font-size: 12px; font-weight: 500; line-height: 1.6; } .hint:empty { display: none; }
+.err { margin: 0; min-height: 1em; font-size: 13px; color: var(--red); } .err:empty { display: none; }
+.wait-code b { font-size: 20px; color: #7c3aed; }
+.eyes { font-size: 12px; white-space: nowrap; flex-shrink: 0; } .eyes:empty { display: none; }
+.who { max-width: 9.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.watching #btn-quit::after { content: ""; }

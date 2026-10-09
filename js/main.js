@@ -8,6 +8,8 @@
   let game = null, cpu = null, level = 'normal', cs = 40, ox = 0, oy = 0, HW = 0, CH = 0, dpr = 1;
   let selMine = -1, selOpp = -1, fx = [], floats = [], shake = 0, flashRows = null, swapAnim = null, lastCoins = [0, 0], aim = -1, aimDown = false;
   const GOLD = '#f5b800';
+  // オンライン：role は host（0番・試合を動かす）／guest（1番）／watch（観戦）
+  let mode = 'cpu', role = null, room = null, meW = 'あなた', opW = '相手', goAt = 0, evSeq = 0, evLog = [], lastSent = 0, lastEv = 0, sentOver = false, leftNote = '';
   const lineOf = row => row >= C.HALF ? row + 1 : row;
   const BLUE = '#3b82f6', RED = '#ef4444', INK = '#3b2a20', WOOD = '#a86a32', WOOD_L = '#d9a066';
 
@@ -45,16 +47,25 @@
 
   // ---------- はじめる ----------
   function start(lv) {
+    leaveRoom(); mode = 'cpu'; role = null; meW = 'あなた'; opW = '相手'; goAt = 0;
     level = lv; game = new SK.Game(); cpu = new SK.Cpu(game, 1, lv);
-    $('name1').textContent = 'CPU（' + { easy: 'よわい', normal: 'ふつう', hard: 'つよい' }[lv] + '）';
+    $('name1').textContent = 'CPU（' + { easy: 'よわい', normal: 'ふつう', hard: 'つよい' }[lv] + '）'; $('name0').textContent = 'あなた';
+    resetView();
+  }
+  function resetView() {
     selMine = selOpp = -1; fx = []; floats = []; swapAnim = null; flashRows = null; aim = -1; aimDown = false; shake = 0; lastCoins = [C.COINS, C.COINS];
-    $('ov-result').classList.remove('show');
+    $('ov-result').classList.remove('show'); $('ov-online').classList.remove('show'); $('again-msg').textContent = '';
     show('game'); layout(); hud();
   }
   document.querySelectorAll('.btn.lv').forEach(b => b.addEventListener('click', () => start(b.dataset.level)));
-  $('btn-again').onclick = () => start(level);
-  $('btn-title').onclick = () => { game = null; $('ov-result').classList.remove('show'); show('title'); };
-  $('btn-quit').onclick = () => { game = null; show('title'); };
+  $('btn-again').onclick = () => {
+    if (mode !== 'online') return start(level);
+    if (!room) return;
+    room.rematch(); $('btn-again').disabled = true; $('again-msg').textContent = 'あいての「もう一回」を待っています…';
+  };
+  function toTitle() { leaveRoom(); game = null; mode = 'cpu'; role = null; $('ov-result').classList.remove('show'); show('title'); }
+  $('btn-title').onclick = toTitle;
+  $('btn-quit').onclick = toTitle;
   $('btn-howto').onclick = () => $('ov-howto').classList.add('show');
   $('btn-howto-close').onclick = () => $('ov-howto').classList.remove('show');
 
@@ -68,16 +79,17 @@
       c.textContent = game.coins[p];
     }
     const st = $('status'), t = game.swapTurn;
+    if (goAt && performance.now() < goAt) { st.textContent = 'まもなく スタート！ ' + Math.ceil((goAt - performance.now()) / 1000); st.className = 'status soon'; return; }
     if (game.pending) {
       const left = Math.max(1, Math.ceil(game.pending.at - game.time));
-      st.textContent = `${game.pending.owner === 0 ? 'あなた' : '相手'}の入れかえ！ 光る2列が あと${left}秒で入れかわる`;
+      st.textContent = `${game.pending.owner === 0 ? meW : opW}の入れかえ！ 光る2列が あと${left}秒で入れかわる`;
       st.className = 'status ' + (game.pending.owner === 0 ? 'mine' : 'theirs');
-    } else if (game.canSwap(0)) {
+    } else if (mine() && game.canSwap(0)) {
       const left = Math.ceil(t.until - game.time);
       st.textContent = (selMine < 0 && selOpp < 0 ? '入れかえできる！ 自分の列と相手の列をタップ' : selMine < 0 ? '自分の列をえらんでね' : selOpp < 0 ? '相手の列をえらんでね' : '') + `（あと${left}秒）`;
       st.className = 'status mine';
-    } else if (t && t.owner === 1 && !t.used) { st.textContent = '相手が、入れかえをねらっている…'; st.className = 'status theirs'; }
-    else { const left = Math.max(0, Math.ceil(game.nextSwapAt - game.time)); st.textContent = left <= 3 ? `まもなく ${game.swapOwner === 0 ? 'あなた' : '相手'}の入れかえの番！ あと${left}秒` : `つぎの入れかえまで ${left}秒（${game.swapOwner === 0 ? 'あなた' : '相手'}の番）`; st.className = 'status' + (left <= 3 ? ' soon' : ''); }
+    } else if (t && t.owner === 1 && !t.used) { st.textContent = opW + 'が、入れかえをねらっている…'; st.className = 'status theirs'; }
+    else { const left = Math.max(0, Math.ceil(game.nextSwapAt - game.time)); st.textContent = left <= 3 ? `まもなく ${game.swapOwner === 0 ? meW : opW}の入れかえの番！ あと${left}秒` : `つぎの入れかえまで ${left}秒（${game.swapOwner === 0 ? meW : opW}の番）`; st.className = 'status' + (left <= 3 ? ' soon' : ''); }
   }
 
   // ---------- 操作 ----------
@@ -86,13 +98,14 @@
   function laneAt(p) { const x = Math.floor(p.gx); return p.gy >= R && x >= 0 && x < L ? x : -1; }
   function pickRow(y) {
     if (y < 0 || y >= R) return;
+    if (!mine()) return;
     if (!game.canSwap(0)) { snd.no(); toast(game.pending ? '入れかえの準備中…' : 'いまは入れかえできません'); return; }
     if (y >= C.HALF) selMine = selMine === R - 1 - y ? -1 : R - 1 - y; else selOpp = selOpp === y ? -1 : y;
     beep(660, 0.05);
-    if (selMine >= 0 && selOpp >= 0) { game.swap(0, selMine, selOpp); selMine = selOpp = -1; }
+    if (selMine >= 0 && selOpp >= 0) { doSwap(selMine, selOpp); selMine = selOpp = -1; }
   }
   cv.addEventListener('pointerdown', e => {
-    if (!game || game.over) return;
+    if (!game || game.over || !mine() || waiting()) return;
     e.preventDefault();
     const p = pos(e), { px, gx, gy } = p;
     // 右はしの ⇄ ：入れかえる列をえらぶ
@@ -111,18 +124,24 @@
     else { type = 'V'; a = Math.floor(gy); b = kx; if (dx > th) { if (swapOn) pickRow(Math.floor(gy)); return; } }
     if (b < 0 || (type === 'H' && b >= L)) return;
     if (!game.canEdit(0, type, a, b)) { if (swapOn && type === 'V') { pickRow(Math.floor(gy)); return; } if (gy < C.HALF) { snd.no(); toast('柵を置けるのは、自分の陣地（下半分）だけ'); } return; }
-    game.toggleFence(0, type, a, b);
+    doFence(type, a, b);
   });
   cv.addEventListener('pointermove', e => { if (!game || game.over) return; if (aimDown || e.pointerType === 'mouse') aim = laneAt(pos(e)); });
   cv.addEventListener('pointerup', e => {
     if (!game || !aimDown) return; aimDown = false;
-    const x = laneAt(pos(e)); if (x >= 0 && !game.over) game.spawn(0, x);
+    const x = laneAt(pos(e)); if (x >= 0 && !game.over && !waiting()) doSpawn(x);
     if (e.pointerType !== 'mouse') aim = -1;
   });
   cv.addEventListener('pointercancel', () => { aimDown = false; aim = -1; });
   cv.addEventListener('pointerleave', e => { if (!aimDown) aim = -1; });
   // キーボード：1〜6で兵士
-  window.addEventListener('keydown', e => { if (game && !game.over && $('game').classList.contains('active') && e.key >= '1' && e.key <= String(L)) game.spawn(0, +e.key - 1); });
+  window.addEventListener('keydown', e => { if (game && !game.over && $('game').classList.contains('active') && e.key >= '1' && e.key <= String(L) && mine() && !waiting()) doSpawn(+e.key - 1); });
+  // 操作の行き先：1番の人は送る（画面にはすぐ出して、とどいた盤で上書き）
+  function mine() { return role !== 'watch'; }
+  function waiting() { return goAt && performance.now() < goAt; }
+  function doFence(type, a, b) { if (game.toggleFence(0, type, a, b) && role === 'guest' && room) room.sendCmd({ t: 'f', ft: type, a, b }); }
+  function doSpawn(x) { if (game.spawn(0, x) && role === 'guest' && room) room.sendCmd({ t: 's', a: x }); }
+  function doSwap(mi, oi) { if (game.swap(0, mi, oi) && role === 'guest' && room) room.sendCmd({ t: 'w', a: mi, b: oi }); }
 
   // ---------- 出来事 ----------
   function handle(e) {
@@ -149,10 +168,13 @@
       setTimeout(() => {
         if (!game) return;
         const w = e.winner, t = $('res-title');
-        t.textContent = w === 0 ? 'かち！' : w === 1 ? 'まけ…' : 'ひきわけ'; t.className = w === 0 ? 'win' : 'lose';
-        $('res-sub').textContent = `のこりHP　あなた ${Math.max(0, game.hp[0])} － ${Math.max(0, game.hp[1])} 相手　（${Math.round(game.time)}秒）`;
-        if (w === 0) { let n = 0; try { n = (+localStorage.getItem('sk_win_' + level) || 0) + 1; localStorage.setItem('sk_win_' + level, n); } catch (er) {} if (n) $('res-sub').textContent += `\nこの強さに ${n}勝目`; }
-        $('ov-result').classList.add('show'); w === 0 ? snd.win() : snd.lose();
+        if (role === 'watch') { t.textContent = w === -1 ? 'ひきわけ' : (w === 0 ? meW : opW) + 'の勝ち！'; t.className = 'win'; }
+        else { t.textContent = w === 0 ? 'かち！' : w === 1 ? 'まけ…' : 'ひきわけ'; t.className = w === 0 ? 'win' : 'lose'; }
+        $('res-sub').textContent = `のこりHP　${meW} ${Math.max(0, game.hp[0])} － ${Math.max(0, game.hp[1])} ${opW}　（${Math.round(game.time)}秒）` + (leftNote ? '\n' + leftNote : '');
+        const ag = $('btn-again'); ag.disabled = false; ag.hidden = mode === 'online' && (role === 'watch' || !!leftNote);
+        $('again-msg').textContent = mode === 'online' && role === 'watch' ? '次の試合が始まるのを待っています…' : '';
+        if (w === 0 && mode === 'cpu') { let n = 0; try { n = (+localStorage.getItem('sk_win_' + level) || 0) + 1; localStorage.setItem('sk_win_' + level, n); } catch (er) {} if (n) $('res-sub').textContent += `\nこの強さに ${n}勝目`; }
+        $('ov-result').classList.add('show'); w === 0 || role === 'watch' ? snd.win() : snd.lose();
       }, 700);
     }
   }
@@ -176,7 +198,7 @@
         const cxp = ox + (x + 0.5) * cs, cyp = y + CH / 2;
         if (p === 0) {
           // 出撃ボタン
-          const can = game.coins[0] > 0;
+          const can = game.coins[0] > 0 && mine();
           g.fillStyle = !can ? '#a9b8cf' : aim === x ? '#1d4ed8' : BLUE; rr(ox + x * cs + 4, y + 6, cs - 8, CH - 12, 9); g.fill();
           g.fillStyle = '#fff'; g.beginPath(); g.moveTo(cxp, cyp - cs * 0.2); g.lineTo(cxp + cs * 0.2, cyp + cs * 0.14); g.lineTo(cxp - cs * 0.2, cyp + cs * 0.14); g.closePath(); g.fill();
         } else { g.fillStyle = RED; g.beginPath(); g.moveTo(cxp, cyp + cs * 0.16); g.lineTo(cxp + cs * 0.15, cyp - cs * 0.1); g.lineTo(cxp - cs * 0.15, cyp - cs * 0.1); g.closePath(); g.fill(); }
@@ -241,7 +263,7 @@
       if (s.stuck) { g.fillStyle = INK; g.font = `900 ${Math.round(cs * 0.3)}px sans-serif`; g.textAlign = 'center'; g.fillText('?', sx + rad * 0.9, sy - rad * 0.9); }
     }
     // 右はしの ⇄
-    const can = game.canSwap(0);
+    const can = mine() && game.canSwap(0);
     for (let y = 0; y < R; y++) {
       const mine = y >= C.HALF, sel = mine ? selMine === R - 1 - y : selOpp === y;
       const bx = ox + bw + 5, by = oy + y * cs + 4, w2 = HW - 4, h2 = cs - 8;
@@ -264,14 +286,121 @@
     requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (!game) return;
-    if (!game.over) { cpu.update(dt); game.step(dt); }
+    const going = !waiting();
+    if (mode === 'cpu') { if (!game.over) { cpu.update(dt); game.step(dt); } }
+    else if (role === 'host') { if (!game.over && going) game.step(dt); }
+    else if (!game.over && going) { game.time += dt; game.acc = Math.min(C.STEP * 0.97, game.acc + dt); }   // とどくまでのあいだ、動きをなめらかに
     if (!game.canSwap(0)) selMine = selOpp = -1;
     const evs = game.events; game.events = [];
     for (const e of evs) handle(e);
+    if (role === 'host' && room) {
+      for (const e of evs) evLog.push([++evSeq, e, now]);
+      evLog = evLog.filter(x => now - x[2] < 3000);
+      if ((now - lastSent > 100 || (evs.length && now - lastSent > 40)) && !sentOver) {
+        lastSent = now; room.sendState(SK.net.pack(game, room.round, evLog.map(x => [x[0], x[1]])));
+        if (game.over) sentOver = true;
+      }
+    }
     hud(); draw(dt);
   }
   requestAnimationFrame(frame);
   document.addEventListener('visibilitychange', () => { last = performance.now(); });
   try { document.fonts.ready.then(() => { if (game) layout(); }); } catch (e) {}
-  SK._debug = { get game() { return game; }, start, geom: () => ({ cs, ox, oy, HW, CH }) };
+  // ---------- あいことば対戦 ----------
+  function loadScript(src) { return new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.onload = res; el.onerror = () => rej(new Error('通信できませんでした。電波のよいところでもう一度ためしてください')); document.head.appendChild(el); }); }
+  async function getDb() {
+    if (SK._db) return SK._db;
+    if (!SK.FIREBASE_CONFIG) throw new Error('オンライン対戦はまだ準備中です');
+    const v = '10.12.2';
+    await loadScript('https://www.gstatic.com/firebasejs/' + v + '/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/' + v + '/firebase-database-compat.js');
+    if (!firebase.apps.length) firebase.initializeApp(SK.FIREBASE_CONFIG);
+    return SK._db = firebase.database();
+  }
+  function leaveRoom() { if (room) { room.leave(); room = null; } document.body.classList.remove('watching'); $('watchers').textContent = ''; }
+  const lobby = wait => { $('online-form').hidden = wait; $('online-wait').hidden = !wait; };
+  function openOnline(code) {
+    lobby(false); $('online-err').textContent = '';
+    try { $('in-name').value = localStorage.getItem('sk-name') || ''; } catch (e) {}
+    if (code) $('in-code').value = code;
+    $('ov-online').classList.add('show');
+  }
+  $('btn-online').onclick = () => { beep(660, 0.05); openOnline(); };
+  $('btn-online-close').onclick = () => { leaveRoom(); $('ov-online').classList.remove('show'); };
+  $('btn-copy').onclick = async () => {
+    const url = location.origin + location.pathname + '?room=' + encodeURIComponent(room ? room.code : '');
+    try { await navigator.clipboard.writeText(url); $('btn-copy').textContent = 'コピーしました！'; } catch (e) { prompt('このリンクを送ってください', url); }
+    setTimeout(() => { $('btn-copy').textContent = 'さそうリンクをコピー'; }, 2000);
+  };
+  $('btn-join').onclick = joinOnline;
+  $('in-code').addEventListener('keydown', e => { if (e.key === 'Enter') joinOnline(); });
+  async function joinOnline() {
+    const code = SK.cleanCode($('in-code').value), name = $('in-name').value.trim().slice(0, 8) || 'ななし';
+    if (!code) { $('online-err').textContent = 'あいことばを入れてください（. # $ / [ ] は使えません）'; return; }
+    try { localStorage.setItem('sk-name', name); } catch (e) {}
+    $('online-err').textContent = ''; $('btn-join').disabled = true; $('btn-join').textContent = 'つないでいます…';
+    try {
+      const db = await getDb();
+      leaveRoom();
+      const r = new SK.OnlineRoom(db, code, name, {
+        onPeople: p => {
+          if (room !== r) return;
+          $('watchers').textContent = p.watchers ? '👀' + p.watchers : '';
+          if (r.slot >= 0 && !p.names[1 - r.slot]) {
+            $('wait-msg').textContent = 'あいてを待っています…';
+            if (game && game.over && mode === 'online') { $('btn-again').hidden = true; $('again-msg').textContent = 'あいてが退室しました'; }
+          }
+        },
+        onStart: g => { if (room === r) onlineStart(g); },
+        onCmd: m => { if (room === r && role === 'host' && game && mode === 'online') SK.net.applyCmd(game, m); },
+        onState: str => { if (room === r) onState(str); },
+        onResult: v => { // 相手がいなくなった
+          if (room !== r || !game || game.over || mode !== 'online') return;
+          const w = role === 'guest' ? (v.loser === 1 ? 1 : 0) : 1 - v.loser;
+          leftNote = role === 'watch' ? (v.loser === 0 ? meW : opW) + 'が退室しました' : 'あいてが退室しました';
+          game.over = true; game.winner = w; sentOver = false;
+          handle({ type: 'over', winner: w });
+        }
+      });
+      room = r;
+      await r.join();
+      document.body.classList.toggle('watching', r.slot < 0);
+      $('wait-code').textContent = r.code;
+      $('wait-msg').textContent = r.slot < 0 ? '観戦で入りました。試合が始まるのを待っています…' : 'あいてを待っています…';
+      lobby(true);
+    } catch (e) {
+      $('online-err').textContent = e.message || 'つながりませんでした';
+      leaveRoom();
+    }
+    $('btn-join').disabled = false; $('btn-join').textContent = 'はいる';
+  }
+  function onlineStart(gm) {
+    mode = 'online'; role = gm.slot === 0 ? 'host' : gm.slot === 1 ? 'guest' : 'watch';
+    const nm = gm.names.map(n => n || '？');
+    if (role === 'watch') { meW = nm[0]; opW = nm[1]; } else { meW = 'あなた'; opW = nm[1 - gm.slot]; }
+    $('name0').textContent = role === 'watch' ? nm[0] : 'あなた'; $('name1').textContent = opW;
+    game = new SK.Game(); cpu = null; leftNote = ''; evSeq = 0; evLog = []; lastSent = 0; lastEv = 0; sentOver = false;
+    if (role !== 'host') { game.swapOwner = 0; game.events = []; }
+    goAt = performance.now() + Math.min(gm.wait, 2500);
+    resetView();
+  }
+  // とどいた盤を、画面の盤に書きこむ（1番の人は上下さかさまにして、自分を下に）
+  const MINE_LOCAL = ['spawn', 'place', 'break', 'full', 'nocoin', 'swapPlan'];
+  function onState(str) {
+    if (!game || mode !== 'online' || role === 'host') return;
+    let d; try { d = JSON.parse(str); } catch (e) { return; }
+    if (d.r !== room.round) return;
+    const wasOver = game.over;
+    if (wasOver && leftNote) return;
+    const got = SK.net.unpack(game, d, role === 'guest');
+    if (goAt && performance.now() < goAt && game.time > 0) goAt = 0;
+    for (const [id, e] of got.events) {
+      if (id <= lastEv) continue; lastEv = id;
+      if (role === 'guest' && e.owner === 0 && MINE_LOCAL.includes(e.type)) continue;
+      if (e.type === 'over' && wasOver) continue;
+      handle(e);
+    }
+  }
+  try { const rc = new URLSearchParams(location.search).get('room'); if (rc) openOnline(SK.cleanCode(rc)); } catch (e) {}
+  SK._debug = { get game() { return game; }, start, geom: () => ({ cs, ox, oy, HW, CH }), get room() { return room; }, get role() { return role; } };
 })();

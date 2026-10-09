@@ -23,6 +23,7 @@
         <button class="btn lv" data-level="normal">ふつう</button>
         <button class="btn lv" data-level="hard">つよい</button>
       </div>
+      <button class="btn online" id="btn-online">あいことばで対戦</button>
       <button class="btn sub" id="btn-howto">あそびかた</button>
     </div>
     <a class="home-link" href="https://nasubi-no-oniwa.github.io/">🍆 なすびのお庭へ</a>
@@ -30,10 +31,10 @@
 </section>
 
 <section id="game" class="screen">
-  <div class="bar top"><span class="who opp" id="name1">CPU</span><span class="hp" id="hp1"></span><span class="coin" id="coin1">12</span></div>
+  <div class="bar top"><span class="who opp" id="name1">CPU</span><span class="eyes" id="watchers"></span><span class="hp" id="hp1"></span><span class="coin" id="coin1">12</span></div>
   <div class="status" id="status">入れかえまで 15秒</div>
   <div class="board-wrap"><canvas id="board"></canvas></div>
-  <div class="bar bottom"><span class="who me">あなた</span><span class="hp" id="hp0"></span><span class="coin" id="coin0">12</span><button class="mini" id="btn-quit">やめる</button></div>
+  <div class="bar bottom"><span class="who me" id="name0">あなた</span><span class="hp" id="hp0"></span><span class="coin" id="coin0">12</span><button class="mini" id="btn-quit">やめる</button></div>
 </section>
 
 <div class="overlay" id="ov-result">
@@ -41,6 +42,7 @@
     <h2 id="res-title">かち！</h2>
     <p id="res-sub"></p>
     <button class="btn primary" id="btn-again">もう一回</button>
+    <p class="hint" id="again-msg"></p>
     <button class="btn sub" id="btn-title">タイトルへ</button>
   </div>
 </div>
@@ -55,13 +57,34 @@
       <li>敵と味方の兵士がぶつかると相殺。おたがい1コインもらえます。</li>
       <li>15秒ごとに、交互に<b>入れかえ</b>の番がきます。自分の列と相手の列を1つずつタップすると、3秒後に柵がまるごと入れかわります。</li>
       <li>入れかえでもらった<b>金色の柵</b>は、こわすと1コインになります。</li>
+      <li><b>あいことばで対戦</b>：同じあいことばを入れた2人で対戦。どちらも自分の城が下に見えます。3人目からは観戦です。先に入った人が画面をはなれると、試合が止まります。</li>
     </ul>
     <button class="btn primary" id="btn-howto-close">とじる</button>
+  </div>
+</div>
+<div class="overlay" id="ov-online">
+  <div class="card">
+    <h2 class="small">あいことばで対戦</h2>
+    <div id="online-form">
+      <label class="field-l">あいことば<input id="in-code" maxlength="20" autocomplete="off" placeholder="例：さくがえ123"></label>
+      <label class="field-l">なまえ<input id="in-name" maxlength="8" autocomplete="off" placeholder="ななし"></label>
+      <p class="hint">同じあいことばを入れた人と対戦します。3人目からは観戦になります。</p>
+      <button class="btn primary wide" id="btn-join">はいる</button>
+    </div>
+    <div id="online-wait" hidden>
+      <p class="wait-code">あいことば「<b id="wait-code"></b>」</p>
+      <p class="wait-msg" id="wait-msg">あいてを待っています…</p>
+      <button class="btn sub wide" id="btn-copy">さそうリンクをコピー</button>
+    </div>
+    <p class="err" id="online-err"></p>
+    <button class="btn sub wide" id="btn-online-close">もどる</button>
   </div>
 </div>
 <div id="toast" class="toast"></div>
 <script src="js/engine.js"></script>
 <script src="js/cpu.js"></script>
+<script src="js/online.js"></script>
+<script src="js/firebase-config.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
