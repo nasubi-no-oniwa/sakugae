@@ -22,73 +22,75 @@
 <body>
 <section id="title" class="screen active">
   <div class="title-box">
-    <h1 class="logo">さく<span>がえ</span></h1>
-    <p class="tagline">柵で道をつくって、相手の柵と入れかえろ。</p>
+    <h1 class="logo" data-ih="logo">さく<span>がえ</span></h1>
+    <p class="tagline" data-i="tagline">柵で道をつくって、相手の柵と入れかえろ。</p>
     <div class="menu">
-      <p class="menu-label">CPUとたいせん</p>
+      <p class="menu-label" data-i="vs_cpu">CPUとたいせん</p>
       <div class="lv-row">
-        <button class="btn lv" data-level="easy">よわい</button>
-        <button class="btn lv" data-level="normal">ふつう</button>
-        <button class="btn lv" data-level="hard">つよい</button>
+        <button class="btn lv" data-level="easy" data-i="easy">よわい</button>
+        <button class="btn lv" data-level="normal" data-i="normal">ふつう</button>
+        <button class="btn lv" data-level="hard" data-i="hard">つよい</button>
       </div>
-      <button class="btn online" id="btn-online">あいことばで対戦</button>
-      <button class="btn sub" id="btn-howto">あそびかた</button>
+      <button class="btn online" id="btn-online" data-i="online">あいことばで対戦</button>
+      <button class="btn sub" id="btn-howto" data-i="howto">あそびかた</button>
     </div>
-    <a class="home-link" href="https://nasubi-no-oniwa.github.io/">🍆 なすびのお庭へ</a>
+    <a class="home-link" href="https://nasubi-no-oniwa.github.io/" data-i="home_e">🍆 なすびのお庭へ</a>
+    <div class="langs" role="group" aria-label="Language"><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">English</button><button type="button" data-lang="zh">繁中</button><button type="button" data-lang="ko">한국어</button></div>
   </div>
 </section>
 
 <section id="game" class="screen">
   <div class="bar top"><span class="who opp" id="name1">CPU</span><span class="eyes" id="watchers"></span><span class="hp" id="hp1"></span><span class="coin" id="coin1">12</span></div>
-  <div class="status" id="status">入れかえまで 15秒</div>
+  <div class="status" id="status"></div>
   <div class="board-wrap"><canvas id="board"></canvas></div>
-  <div class="bar bottom"><span class="who me" id="name0">あなた</span><span class="hp" id="hp0"></span><span class="coin" id="coin0">12</span><button class="mini" id="btn-quit">やめる</button></div>
+  <div class="bar bottom"><span class="who me" id="name0" data-i="you">あなた</span><span class="hp" id="hp0"></span><span class="coin" id="coin0">12</span><button class="mini" id="btn-quit" data-i="quit">やめる</button></div>
 </section>
 
 <div class="overlay" id="ov-result">
   <div class="card">
-    <h2 id="res-title">かち！</h2>
+    <h2 id="res-title" data-i="res_win">かち！</h2>
     <p id="res-sub"></p>
-    <button class="btn primary" id="btn-again">もう一回</button>
+    <button class="btn primary" id="btn-again" data-i="again">もう一回</button>
     <p class="hint" id="again-msg"></p>
-    <button class="btn sub" id="btn-title">タイトルへ</button>
+    <button class="btn sub" id="btn-title" data-i="to_title">タイトルへ</button>
   </div>
 </div>
 <div class="overlay" id="ov-howto">
   <div class="card howto">
-    <h2>あそびかた</h2>
+    <h2 data-i="howto">あそびかた</h2>
     <ul>
-      <li><b>下の城</b>があなた。レーンの下の <b>▲</b> を押してはなすと兵士が出ます（1コイン）。押しているあいだ、兵士の<b>道すじ</b>が点線で見えます。</li>
-      <li>兵士が相手の城に着くと <b>1ダメージ</b>。先に相手のHP10をけずったら勝ち。受けた側は<b>2コイン</b>もらえます。</li>
-      <li><b>自分の陣地（下半分）の線</b>を押すと柵を置けます（1コイン）。もう一度押すとこわせますが、<b>コインはもどりません</b>。横1列をまるごとふさぐことはできません。</li>
-      <li>兵士は前がふさがると横へ動きます。進めないままだと、しばらくして<b>目の前の柵をこわします</b>。</li>
-      <li>敵と味方の兵士がぶつかると相殺。おたがい1コインもらえます。</li>
-      <li>15秒ごとに、交互に<b>入れかえ</b>の番がきます。自分の列と相手の列を1つずつタップすると、3秒後に柵がまるごと入れかわります。</li>
-      <li>入れかえでもらった<b>金色の柵</b>は、こわすと1コインになります。</li>
-      <li><b>あいことばで対戦</b>：同じあいことばを入れた2人で対戦。どちらも自分の城が下に見えます。3人目からは観戦です。先に入った人が画面をはなれると、試合が止まります。</li>
+      <li data-ih="h1"><b>下の城</b>があなた。レーンの下の <b>▲</b> を押してはなすと兵士が出ます（1コイン）。押しているあいだ、兵士の<b>道すじ</b>が点線で見えます。</li>
+      <li data-ih="h2">兵士が相手の城に着くと <b>1ダメージ</b>。先に相手のHP10をけずったら勝ち。受けた側は<b>2コイン</b>もらえます。</li>
+      <li data-ih="h3"><b>自分の陣地（下半分）の線</b>を押すと柵を置けます（1コイン）。もう一度押すとこわせますが、<b>コインはもどりません</b>。横1列をまるごとふさぐことはできません。</li>
+      <li data-ih="h4">兵士は前がふさがると横へ動きます。進めないままだと、しばらくして<b>目の前の柵をこわします</b>。</li>
+      <li data-ih="h5">敵と味方の兵士がぶつかると相殺。おたがい1コインもらえます。</li>
+      <li data-ih="h6">15秒ごとに、交互に<b>入れかえ</b>の番がきます。自分の列と相手の列を1つずつタップすると、3秒後に柵がまるごと入れかわります。</li>
+      <li data-ih="h7">入れかえでもらった<b>金色の柵</b>は、こわすと1コインになります。</li>
+      <li data-ih="h8"><b>あいことばで対戦</b>：同じあいことばを入れた2人で対戦。どちらも自分の城が下に見えます。3人目からは観戦です。先に入った人が画面をはなれると、試合が止まります。</li>
     </ul>
-    <button class="btn primary" id="btn-howto-close">とじる</button>
+    <button class="btn primary" id="btn-howto-close" data-i="close">とじる</button>
   </div>
 </div>
 <div class="overlay" id="ov-online">
   <div class="card">
-    <h2 class="small">あいことばで対戦</h2>
+    <h2 class="small" data-i="online">あいことばで対戦</h2>
     <div id="online-form">
-      <label class="field-l">あいことば<input id="in-code" maxlength="20" autocomplete="off" placeholder="例：さくがえ123"></label>
-      <label class="field-l">なまえ<input id="in-name" maxlength="8" autocomplete="off" placeholder="ななし"></label>
-      <p class="hint">同じあいことばを入れた人と対戦します。3人目からは観戦になります。</p>
-      <button class="btn primary wide" id="btn-join">はいる</button>
+      <label class="field-l"><span data-i="passcode">あいことば</span><input id="in-code" maxlength="20" autocomplete="off" placeholder="例：さくがえ123" data-ip="ex_code"></label>
+      <label class="field-l"><span data-i="name">なまえ</span><input id="in-name" maxlength="8" autocomplete="off" placeholder="ななし" data-ip="noname"></label>
+      <p class="hint" data-i="online_hint2">同じあいことばを入れた人と対戦します。3人目からは観戦になります。</p>
+      <button class="btn primary wide" id="btn-join" data-i="join">はいる</button>
     </div>
     <div id="online-wait" hidden>
-      <p class="wait-code">あいことば「<b id="wait-code"></b>」</p>
-      <p class="wait-msg" id="wait-msg">あいてを待っています…</p>
-      <button class="btn sub wide" id="btn-copy">さそうリンクをコピー</button>
+      <p class="wait-code"><span data-i="wait_pre">あいことば「</span><b id="wait-code"></b><span data-i="wait_post">」</span></p>
+      <p class="wait-msg" id="wait-msg" data-i="waiting">あいてを待っています…</p>
+      <button class="btn sub wide" id="btn-copy" data-i="copy_link">さそうリンクをコピー</button>
     </div>
     <p class="err" id="online-err"></p>
-    <button class="btn sub wide" id="btn-online-close">もどる</button>
+    <button class="btn sub wide" id="btn-online-close" data-i="back">もどる</button>
   </div>
 </div>
 <div id="toast" class="toast"></div>
+<script src="js/i18n.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/cpu.js"></script>
 <script src="js/online.js"></script>

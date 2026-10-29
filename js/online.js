@@ -78,7 +78,7 @@
   class OnlineRoom {
     constructor(db, code, name, cb) {
       this.db = db; this.code = clean(code);
-      this.name = (String(name || '').trim().slice(0, 8)) || 'ななし';
+      this.name = (String(name || '').trim().slice(0, 8)) || (window.I18N ? I18N.t('noname') : 'ななし');
       this.cb = cb || {}; this.id = uid(); this.slot = -1;
       this.players = {}; this.watchers = {}; this.ready = {};
       this.game = null; this.round = 0; this.results = {};
@@ -89,7 +89,7 @@
     now() { return Date.now() + this.offset; }
     on(ref, ev, fn) { ref.on(ev, fn); this.subs.push([ref, ev, fn]); }
     async join() {
-      if (!this.code) throw new Error('あいことばを入れてください');
+      if (!this.code) throw new Error(window.I18N ? I18N.t('err_code_short') : 'あいことばを入れてください');
       this.on(this.db.ref('.info/serverTimeOffset'), 'value', s => { this.offset = s.val() || 0; });
       for (const s of [0, 1]) {
         const ref = this.root.child('players/' + s);
