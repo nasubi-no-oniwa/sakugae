@@ -80,13 +80,15 @@ html[data-lang="ko"] { --display: "Black Han Sans", "Dela Gothic One", "M PLUS R
 html[data-lang="en"] .logo { font-size: clamp(40px, 15vw, 76px); line-height: 1; }
 html[data-lang="en"] .logo span, html[data-lang="ko"] .logo span { display: block; }
 html[data-lang="ko"] .logo { font-size: clamp(44px, 16vw, 84px); line-height: 1.05; }
-html:not([data-lang="ja"]) .status { white-space: normal; line-height: 1.3; max-width: min(100%, 480px); border-radius: 16px; }
+.status { white-space: normal; line-height: 1.3; max-width: min(100%, 480px); border-radius: 16px; }
 html:not([data-lang="ja"]) .toast { white-space: normal; max-width: calc(100vw - 32px); text-align: center; }
 html[data-lang="en"] .card h2, html[data-lang="ko"] .card h2 { font-size: 34px; }
 html:not([data-lang="ja"]) .card h2.small, html:not([data-lang="ja"]) .howto h2 { font-size: 24px; }
 html[data-lang="zh"] .logo { font-size: clamp(44px, 16vw, 88px); }
-html:not([data-lang="ja"]) .bar .who { font-size: 13px; padding: 1px 9px; }
+.bar .who { font-size: 13px; padding: 1px 9px; max-width: 10.5em; }
 html:not([data-lang="ja"]) .bar .coin { min-width: 52px; }
+/* PC：英語などの「あそびかた」は横に広げて、とじるボタンまで1画面に */
+@media (min-width: 600px) and (min-height: 600px) { html:not([data-lang="ja"]) .howto { max-width: 470px; } html[data-lang="en"] .howto ul { line-height: 1.6; } }
 /* 背の低い画面（スマホ横・小さいPC）：タイトルを上から並べてスクロールできるように */
 @media (max-height: 560px) {
   #title { justify-content: flex-start; overflow-y: auto; }
@@ -97,5 +99,8 @@ html:not([data-lang="ja"]) .bar .coin { min-width: 52px; }
   #title .tagline { margin: 6px 0 10px; }
   #title .menu { padding: 10px; gap: 8px; }
   #title .home-link { margin-top: 8px; }
-  #title .langs { margin-top: 8px; }
+  #title .langs { margin-top: 6px; }
+  #title .menu .btn { padding-top: 8px; padding-bottom: 8px; }
+  html:not([data-lang="ja"]) #title .tagline { font-size: 13px; }
+  #title .home-link { margin-top: 6px; }
 }
